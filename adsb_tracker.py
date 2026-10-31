@@ -152,14 +152,75 @@ def fetch_route(hexcode, callsign):
             data = r.json()
             if data:
                 last = data[-1]
-                origin = last.get("estDepartureAirport") or ""
-                dest = last.get("estArrivalAirport") or ""
+                origin = airport_name(last.get("estDepartureAirport") or "")
+                dest = airport_name(last.get("estArrivalAirport") or "")
                 ROUTE_CACHE[key] = (origin, dest)
                 return (origin, dest)
     except Exception:
         pass
     ROUTE_CACHE[key] = ("", "")
     return ("", "")
+
+AIRPORTS = {
+    "EIDW": "Dublin", "EICK": "Cork", "EINN": "Shannon", "EIKN": "Knock",
+    "EGSS": "Stansted", "EGLL": "Heathrow", "EGKK": "Gatwick", "EGCC": "Manchester",
+    "EGPH": "Edinburgh", "EGPF": "Glasgow", "EGBB": "Birmingham", "EGNX": "East Midlands",
+    "EGGD": "Bristol", "EGGW": "Luton", "EGNM": "Leeds Bradford", "EGNT": "Newcastle",
+    "LFPG": "CDG Paris", "LFPO": "Orly", "LFMN": "Nice", "LFML": "Marseille",
+    "LFLL": "Lyon", "LFBD": "Bordeaux", "LFBG": "Bergen", "LFST": "Strasbourg",
+    "EHAM": "Amsterdam", "EBBR": "Brussels", "EDDF": "Frankfurt", "EDDM": "Munich",
+    "EDDB": "Berlin", "EDDH": "Hamburg", "EDDL": "Dusseldorf", "EDDS": "Stuttgart",
+    "EDDK": "Cologne", "EDDV": "Hanover", "EDDW": "Bremen", "EDDP": "Leipzig",
+    "LEMD": "Madrid", "LEBL": "Barcelona", "LEPA": "Palma", "LEMG": "Malaga",
+    "LEAL": "Alicante", "LEVC": "Valencia", "LEZL": "Seville", "LEBB": "Bilbao",
+    "LIRF": "Rome Fiumicino", "LIMC": "Milan Malpensa", "LIME": "Bergamo",
+    "LIPE": "Bologna", "LIPZ": "Venice", "LIRQ": "Florence", "LICJ": "Palermo",
+    "LICA": "Lamezia", "LICR": "Reggio Calabria", "LIRN": "Naples",
+    "LOWW": "Vienna", "LSZH": "Zurich", "LSGG": "Geneva", "LSZB": "Bern",
+    "EKCH": "Copenhagen", "ENGM": "Oslo", "ESSA": "Stockholm Arlanda",
+    "EFHK": "Helsinki", "EPWA": "Warsaw", "LKPR": "Prague", "LHBP": "Budapest",
+    "LWSK": "Skopje", "LDZA": "Zagreb", "LJLJ": "Ljubljana", "LATI": "Tirana",
+    "LTFM": "Istanbul", "LTBA": "Istanbul Ataturk", "LTFJ": "Sabiha Gokcen",
+    "KJFK": "JFK New York", "KLAX": "Los Angeles", "KORD": "Chicago O'Hare",
+    "KATL": "Atlanta", "KDFW": "Dallas DFW", "KDEN": "Denver", "KSFO": "San Francisco",
+    "KSEA": "Seattle", "KMIA": "Miami", "KBOS": "Boston", "KPHL": "Philadelphia",
+    "KIAD": "Washington Dulles", "KDCA": "Washington National", "KLAS": "Las Vegas",
+    "KPHX": "Phoenix", "KIAH": "Houston", "KDTW": "Detroit", "KMSP": "Minneapolis",
+    "KSLC": "Salt Lake City", "KPDX": "Portland", "KSAN": "San Diego",
+    "KBNA": "Nashville", "KAUS": "Austin", "KMDW": "Chicago Midway",
+    "CYUL": "Montreal", "CYYZ": "Toronto", "CYVR": "Vancouver", "CYOW": "Ottawa",
+    "CYYC": "Calgary", "CYEG": "Edmonton", "CYHZ": "Halifax", "CYWG": "Winnipeg",
+    "OMDB": "Dubai", "OMAA": "Abu Dhabi", "OTHH": "Doha", "OERK": "Riyadh",
+    "OEJN": "Jeddah", "OEDF": "Dammam", "OMSJ": "Sharjah", "OBBI": "Bahrain",
+    "OKBK": "Kuwait", "OOMS": "Muscat", "OIKB": "Bandar Abbas", "OISS": "Shiraz",
+    "OIII": "Tehran", "OIMM": "Mashhad", "OIKM": "Kermanshah",
+    "VABB": "Mumbai", "VIDP": "Delhi", "VOBL": "Bangalore", "VOMM": "Chennai",
+    "VECC": "Kolkata", "VAAH": "Ahmedabad", "VAGO": "Goa", "VOCI": "Kochi",
+    "ZBAA": "Beijing Capital", "ZSPD": "Shanghai Pudong", "ZGGG": "Guangzhou",
+    "ZUUU": "Chengdu", "ZSSS": "Shanghai Hongqiao", "ZGSZ": "Shenzhen",
+    "RJTT": "Tokyo Haneda", "RJAA": "Tokyo Narita", "RKSI": "Seoul Incheon",
+    "RJBB": "Osaka Kansai", "RJOO": "Osaka Itami", "RJFF": "Fukuoka",
+    "WMKK": "Kuala Lumpur", "WSSS": "Singapore", "VTBS": "Bangkok Suvarnabhumi",
+    "VTBD": "Bangkok Don Mueang", "VHHH": "Hong Kong", "RPLL": "Manila",
+    "YSSY": "Sydney", "YMML": "Melbourne", "YBBN": "Brisbane", "YPPH": "Perth",
+    "NZAA": "Auckland", "NZWN": "Wellington", "NZCH": "Christchurch",
+    "FAOR": "Johannesburg", "FACT": "Cape Town", "FALE": "Durban",
+    "HKJK": "Nairobi", "DNMM": "Lagos", "DGAA": "Accra", "HECA": "Cairo",
+    "GMMN": "Casablanca", "DTTA": "Tunis", "DAAG": "Algiers",
+    "SBGR": "Sao Paulo GRU", "SBSP": "Sao Paulo CGH", "SBRJ": "Rio de Janeiro",
+    "SBGL": "Rio Galeao", "SBBR": "Brasilia", "SBKP": "Campinas",
+    "SAEZ": "Buenos Aires EZE", "SABE": "Buenos Aires AEP", "SCEL": "Santiago",
+    "SKBO": "Bogota", "SEQM": "Quito", "SPJC": "Lima", "MMMX": "Mexico City",
+    "MPTO": "Panama City", "MROC": "San Jose CR", "TNCA": "Curacao",
+    "TJSJ": "San Juan PR", "MDSD": "Santo Domingo", "MKJP": "Kingston",
+    "TBPB": "Bridgetown", "TFFR": "Pointe-a-Pitre", "TNCM": "St Maarten",
+}
+
+def airport_name(code):
+    if not code:
+        return ""
+    code = code.strip().upper()
+    return AIRPORTS.get(code, code)
 
 def dist_nm(lat1, lon1, lat2, lon2):
     R = 3440.065
@@ -262,7 +323,7 @@ def main():
         if cur_search:
             print(f"Highlight filter: '{cur_search}'")
         print("="*118)
-        header = f"{'ICAO':<8}{'Callsign':<11}{'Reg':<10}{'Type':<8}{'Operator':<20}{'From':<6}{'To':<6}{'Alt(ft)':>8}{'Spd(kt)':>8}{'Hdg':>6}{'Dist(nm)':>9}{'Seen':>6}"
+        header = f"{'ICAO':<8}{'Callsign':<11}{'Reg':<10}{'Type':<8}{'Operator':<20}{'From':<12}{'To':<12}{'Alt(ft)':>8}{'Spd(kt)':>8}{'Hdg':>6}{'Dist(nm)':>9}{'Seen':>6}"
         print(header)
         print("-"*118)
 
@@ -311,7 +372,7 @@ def main():
             spd_s = f"{speed:.0f}" if speed is not None else "-"
             trk_s = f"{track:.0f}" if track is not None else "-"
             highlight = (cur_search and (cur_search in hexc or cur_search in callsign or cur_search in reg))
-            line = f"{fmt(hexc,8)}{fmt(callsign,11)}{fmt(reg,10)}{fmt(typ,8)}{fmt(op,20)}{fmt(origin or '-',6)}{fmt(dest or '-',6)}{alt_s:>8}{spd_s:>8}{trk_s:>6}{dist:>9}{seen:>6.1f}"
+            line = f"{fmt(hexc,8)}{fmt(callsign,11)}{fmt(reg,10)}{fmt(typ,8)}{fmt(op,20)}{fmt(origin or '-',12)}{fmt(dest or '-',12)}{alt_s:>8}{spd_s:>8}{trk_s:>6}{dist:>9}{seen:>6.1f}"
             if highlight:
                 line = "\033[1;32m" + line + "\033[0m"
             print(line)
