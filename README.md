@@ -84,5 +84,5 @@ With OpenSky credentials (`OPENSKY_USER`/`OPENSKY_PASS`), the From/To columns po
 
 - Receive-only. No transmission is performed.
 - Aircraft metadata is fetched from hexdb.io (free, no auth required).
-- Origin/destination columns require OpenSky Network credentials via environment variables; without them, columns show `-`.
+- Origin/destination columns use OpenSky Network OAuth2 credentials. Place your `credentials.json` (with `clientId`/`clientSecret`) in `~/Downloads/` or set `OPENSKY_CREDS` env var to its path. Without credentials, columns show `-`.
 - For best results, use a 1090 MHz-tuned antenna; the default RTL-SDR antenna works but range is limited.

@@ -28,6 +28,9 @@ OPENSKY_LAST = 0
 import os as _os
 OPENSKY_USER = _os.environ.get('OPENSKY_USER')
 OPENSKY_PASS = _os.environ.get('OPENSKY_PASS')
+CREDS_FILE = _os.environ.get('OPENSKY_CREDS', _os.path.expanduser('~/Downloads/credentials.json'))
+_OAUTH_TOKEN = None
+_OAUTH_EXPIRY = 0
 ROUTE_CACHE = {}
 SEARCH = ""
 SEARCH_LOCK = threading.Lock()
@@ -84,11 +87,49 @@ def fetch_opensky_states():
         pass
     return None
 
+def get_oauth_token():
+    global _OAUTH_TOKEN, _OAUTH_EXPIRY
+    if _OAUTH_TOKEN and time.time() < _OAUTH_EXPIRY - 30:
+        return _OAUTH_TOKEN
+    # Try client credentials file first
+    client_id = None
+    client_secret = None
+    try:
+        if _os.path.exists(CREDS_FILE):
+            with open(CREDS_FILE) as f:
+                creds = json.load(f)
+            client_id = creds.get("clientId") or creds.get("client_id")
+            client_secret = creds.get("clientSecret") or creds.get("client_secret")
+    except Exception:
+        pass
+    if not client_id or not client_secret:
+        return None
+    try:
+        r = requests.post(
+            "https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token",
+            data={
+                "grant_type": "client_credentials",
+                "client_id": client_id,
+                "client_secret": client_secret,
+            }, timeout=10)
+        if r.status_code == 200:
+            data = r.json()
+            _OAUTH_TOKEN = data.get("access_token")
+            _OAUTH_EXPIRY = time.time() + data.get("expires_in", 1800)
+            return _OAUTH_TOKEN
+    except Exception:
+        pass
+    return None
+
 def fetch_route(hexcode, callsign):
     key = (hexcode, callsign)
     if key in ROUTE_CACHE:
         return ROUTE_CACHE[key]
-    if not (OPENSKY_USER and OPENSKY_PASS and HAS_REQUESTS):
+    if not HAS_REQUESTS:
+        ROUTE_CACHE[key] = ("", "")
+        return ("", "")
+    token = get_oauth_token()
+    if not token:
         ROUTE_CACHE[key] = ("", "")
         return ("", "")
     try:
@@ -96,7 +137,7 @@ def fetch_route(hexcode, callsign):
         r = requests.get(
             "https://opensky-network.org/api/flights/aircraft",
             params={"icao24": hexcode.lower(), "begin": now-7200, "end": now},
-            auth=(OPENSKY_USER, OPENSKY_PASS), timeout=8)
+            headers={"Authorization": f"Bearer {token}"}, timeout=8)
         if r.status_code == 200:
             data = r.json()
             if data:
