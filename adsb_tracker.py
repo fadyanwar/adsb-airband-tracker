@@ -28,7 +28,17 @@ OPENSKY_LAST = 0
 import os as _os
 OPENSKY_USER = _os.environ.get('OPENSKY_USER')
 OPENSKY_PASS = _os.environ.get('OPENSKY_PASS')
-CREDS_FILE = _os.environ.get('OPENSKY_CREDS', _os.path.expanduser('~/Downloads/credentials.json'))
+_creds_candidates = [
+    _os.environ.get('OPENSKY_CREDS'),
+    _os.path.expanduser('~/Downloads/credentials.json'),
+    _os.path.expanduser('~/.config/opensky/credentials.json'),
+    _os.path.expanduser('~/.opensky/credentials.json'),
+]
+CREDS_FILE = None
+for c in _creds_candidates:
+    if c and _os.path.exists(c):
+        CREDS_FILE = c
+        break
 _OAUTH_TOKEN = None
 _OAUTH_EXPIRY = 0
 ROUTE_CACHE = {}
@@ -95,7 +105,7 @@ def get_oauth_token():
     client_id = None
     client_secret = None
     try:
-        if _os.path.exists(CREDS_FILE):
+        if CREDS_FILE and _os.path.exists(CREDS_FILE):
             with open(CREDS_FILE) as f:
                 creds = json.load(f)
             client_id = creds.get("clientId") or creds.get("client_id")
