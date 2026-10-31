@@ -25,6 +25,10 @@ INTERVAL = 2.0
 HEXDB_CACHE = {}
 OPENSKY_CACHE = {}
 OPENSKY_LAST = 0
+import os as _os
+OPENSKY_USER = _os.environ.get('OPENSKY_USER')
+OPENSKY_PASS = _os.environ.get('OPENSKY_PASS')
+ROUTE_CACHE = {}
 SEARCH = ""
 SEARCH_LOCK = threading.Lock()
 AIRBAND_LOG = "/tmp/airband_activity.log"
@@ -79,6 +83,32 @@ def fetch_opensky_states():
     except Exception:
         pass
     return None
+
+def fetch_route(hexcode, callsign):
+    key = (hexcode, callsign)
+    if key in ROUTE_CACHE:
+        return ROUTE_CACHE[key]
+    if not (OPENSKY_USER and OPENSKY_PASS and HAS_REQUESTS):
+        ROUTE_CACHE[key] = ("", "")
+        return ("", "")
+    try:
+        now = int(time.time())
+        r = requests.get(
+            "https://opensky-network.org/api/flights/aircraft",
+            params={"icao24": hexcode.lower(), "begin": now-7200, "end": now},
+            auth=(OPENSKY_USER, OPENSKY_PASS), timeout=8)
+        if r.status_code == 200:
+            data = r.json()
+            if data:
+                last = data[-1]
+                origin = last.get("estDepartureAirport") or ""
+                dest = last.get("estArrivalAirport") or ""
+                ROUTE_CACHE[key] = (origin, dest)
+                return (origin, dest)
+    except Exception:
+        pass
+    ROUTE_CACHE[key] = ("", "")
+    return ("", "")
 
 def dist_nm(lat1, lon1, lat2, lon2):
     R = 3440.065
@@ -181,7 +211,7 @@ def main():
         if cur_search:
             print(f"Highlight filter: '{cur_search}'")
         print("="*118)
-        header = f"{'ICAO':<8}{'Callsign':<11}{'Reg':<10}{'Type':<8}{'Operator':<24}{'Alt(ft)':>8}{'Spd(kt)':>8}{'Hdg':>6}{'Dist(nm)':>9}{'Seen':>6}"
+        header = f"{'ICAO':<8}{'Callsign':<11}{'Reg':<10}{'Type':<8}{'Operator':<20}{'From':<6}{'To':<6}{'Alt(ft)':>8}{'Spd(kt)':>8}{'Hdg':>6}{'Dist(nm)':>9}{'Seen':>6}"
         print(header)
         print("-"*118)
 
@@ -204,6 +234,7 @@ def main():
             os_state = opensky_states.get(hexc) if hexc else None
             if os_state and not callsign:
                 callsign = (os_state[1] or "").strip()
+            origin, dest = fetch_route(hexc, callsign) if hexc else ("", "")
 
             dist = ""
             if lat is not None and lon is not None and rx_lat is not None:
@@ -213,7 +244,7 @@ def main():
                 except Exception:
                     dist = ""
 
-            rows.append((hexc, callsign, reg, typ, op, alt, speed, track, dist, seen, squawk))
+            rows.append((hexc, callsign, reg, typ, op, origin, dest, alt, speed, track, dist, seen, squawk))
 
         def sortkey(r):
             try:
@@ -224,12 +255,12 @@ def main():
         rows.sort(key=sortkey)
 
         for r in rows[:45]:
-            hexc, callsign, reg, typ, op, alt, speed, track, dist, seen, squawk = r
+            hexc, callsign, reg, typ, op, origin, dest, alt, speed, track, dist, seen, squawk = r
             alt_s = f"{alt}" if alt is not None else "-"
             spd_s = f"{speed:.0f}" if speed is not None else "-"
             trk_s = f"{track:.0f}" if track is not None else "-"
             highlight = (cur_search and (cur_search in hexc or cur_search in callsign or cur_search in reg))
-            line = f"{fmt(hexc,8)}{fmt(callsign,11)}{fmt(reg,10)}{fmt(typ,8)}{fmt(op,24)}{alt_s:>8}{spd_s:>8}{trk_s:>6}{dist:>9}{seen:>6.1f}"
+            line = f"{fmt(hexc,8)}{fmt(callsign,11)}{fmt(reg,10)}{fmt(typ,8)}{fmt(op,20)}{fmt(origin or '-',6)}{fmt(dest or '-',6)}{alt_s:>8}{spd_s:>8}{trk_s:>6}{dist:>9}{seen:>6.1f}"
             if highlight:
                 line = "\033[1;32m" + line + "\033[0m"
             print(line)

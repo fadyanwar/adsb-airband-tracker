@@ -31,11 +31,11 @@ ADS-B Aircraft Tracker  |  22:15:32 UTC  |  RTL-SDR + hexdb.io + OpenSky
 Receiver: 53.47, -6.12  |  Aircraft seen: 3
 Highlight filter: 'RYR'
 ======================================================================================================================
-ICAO    Callsign   Reg       Type    Operator                 Alt(ft) Spd(kt)   Hdg Dist(nm)  Seen
+ICAO    Callsign   Reg       Type    Operator            From  To     Alt(ft) Spd(kt)   Hdg Dist(nm)  Seen
 ----------------------------------------------------------------------------------------------------------------------
-4CA894  RYR3XZ    EI-DWS    B738    Ryanair                  9425    299     88     12.3    0.2
-4CA9D3  RYR449    EI-EKK    B738    Ryanair                   625    137    276     18.7   33.0
-4A1265  DNA508    EI-DAA    A320    Aer Lingus              13525    372    100     45.1    7.2
+4CA894  RYR3XZ    EI-DWS    B738    Ryanair             EIDW  EGSS    9425    299     88     12.3    0.2
+4CA9D3  RYR449    EI-EKK    B738    Ryanair             EIDW  EGCC     625    137    276     18.7   33.0
+4A1265  DNA508    EI-DAA    A320    Aer Lingus          EIDW  EGLL   13525    372    100     45.1    7.2
 
 Legend: ICAO=Mode-S hex | Reg=tail number | Type=ICAO aircraft type | Dist=nm from receiver
 Airband monitor: 118.5 MHz  (activity -> /tmp/airband_activity.log)
@@ -48,3 +48,4 @@ Type callsign fragment + Enter to highlight. 'clear' to reset. Ctrl+C to stop.
 - Aircraft metadata is fetched from hexdb.io and OpenSky Network (free, rate-limited).
 - Distance is calculated from the receiver location (auto-detected or manually set).
 - For best results, use a 1090 MHz-tuned antenna; the default RTL-SDR antenna works but range is limited.
+- Origin/destination (From/To) columns require OpenSky Network credentials: set `OPENSKY_USER` and `OPENSKY_PASS` environment variables. Without them, columns show `-`.
